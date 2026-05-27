@@ -196,6 +196,35 @@ function App() {
       })
   }, [user])
 
+  const handleScanResult = async (decodedText: string) => {
+    const player = playerRef.current
+    if (!player) {
+      setError('Player not ready')
+      return
+    }
+
+    try {
+      // Activate audio (helps mobile browsers)
+      await player.player.activateElement()
+
+      const trackUri = extractTrackUri(decodedText)
+      const info = await playTrack(sdk, player.deviceId, trackUri)
+      setNowPlaying(info)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to play track')
+    }
+  }
+
+  const handleLogin = () => {
+    sdk.authenticate()
+  }
+
+  const handleStart = () => {
+    setError(null)
+    setNowPlaying(null)
+    setScanning(true)
+  }
+
   // 3. QR scanner lifecycle
   useEffect(() => {
     if (!scanning) return
@@ -231,35 +260,6 @@ function App() {
       scannerRef.current = null
     }
   }, [scanning])
-
-  const handleScanResult = async (decodedText: string) => {
-    const player = playerRef.current
-    if (!player) {
-      setError('Player not ready')
-      return
-    }
-
-    try {
-      // Activate audio (helps mobile browsers)
-      await player.player.activateElement()
-
-      const trackUri = extractTrackUri(decodedText)
-      const info = await playTrack(sdk, player.deviceId, trackUri)
-      setNowPlaying(info)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to play track')
-    }
-  }
-
-  const handleLogin = () => {
-    sdk.authenticate()
-  }
-
-  const handleStart = () => {
-    setError(null)
-    setNowPlaying(null)
-    setScanning(true)
-  }
 
   return (
     <AppWrapper>
