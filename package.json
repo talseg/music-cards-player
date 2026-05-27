@@ -11,14 +11,17 @@
     "clean": "powershell -Command \"Remove-Item -r node_modules, dist, *.tsbuildinfo\""
   },
   "dependencies": {
+    "html5-qrcode": "^2.3.8",
     "react": "^19.2.6",
-    "react-dom": "^19.2.6"
+    "react-dom": "^19.2.6",
+    "styled-components": "^6.4.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@types/styled-components": "^5.1.36",
     "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
