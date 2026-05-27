@@ -10,12 +10,22 @@ const AppWrapper = styled.div`
   flex-direction: column;
   align-items: center;
   padding: 40px;
-  gap: 24px;
+  gap: 18px;
 `
 
 const VersionLabel = styled.div`
   font-size: 0.75rem;
   color: #888;
+`
+
+const HeaderLabel = styled.div`
+  font-size: 1.75rem;
+  color: #d41c1c;
+  font-weight: 550;
+`
+const CreditLabel = styled.div`
+  font-size: 1.2rem;
+  color: #1c2ed4;
 `
 
 const Button = styled.button`
@@ -112,6 +122,8 @@ function App() {
   return (
     <AppWrapper>
       <VersionLabel>project version: {version}</VersionLabel>
+      <HeaderLabel>♫ My Song ♫</HeaderLabel>
+      <CreditLabel>By Tal segal</CreditLabel>
 
       <Button onClick={handleStart} disabled={scanning}>
         {scanning ? 'Scanning...' : 'Start'}
