@@ -99,6 +99,15 @@ export async function playTrack(
   const trackId = trackUri.split(':').pop() as string
   const track = await sdk.tracks.get(trackId)
 
+  // Transfer playback to our device first (handles "Restriction violated"
+  // when Spotify is active on another device, e.g. desktop app).
+  // Silent failure is OK - the play call below will surface any real error.
+  try {
+    await sdk.player.transferPlayback([deviceId], false)
+  } catch {
+    // ignore - may fail if no playback context exists yet, that's fine
+  }
+
   // Start playback on our device
   await sdk.player.startResumePlayback(deviceId, undefined, [trackUri])
 
