@@ -88,6 +88,7 @@ export function extractTrackUri(input: string): string {
 export interface TrackInfo {
   name: string
   artist: string
+  year: string
 }
 
 export async function playTrack(
@@ -114,5 +115,19 @@ export async function playTrack(
   return {
     name: track.name,
     artist: track.artists.map((a) => a.name).join(', '),
+    year: track.album.release_date?.slice(0, 4) ?? '',
   }
+}
+
+export async function pauseTrack(player: Spotify.Player): Promise<void> {
+  await player.pause()
+}
+
+export async function resumeTrack(player: Spotify.Player): Promise<void> {
+  await player.resume()
+}
+
+export async function seekToStart(player: Spotify.Player): Promise<void> {
+  await player.seek(0)
+  await player.resume()
 }
