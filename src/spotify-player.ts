@@ -131,3 +131,7 @@ export async function seekToStart(player: Spotify.Player): Promise<void> {
   await player.seek(0)
   await player.resume()
 }
+
+export async function seekTo(player: Spotify.Player, positionMs: number): Promise<void> {
+  await player.seek(positionMs)
+}

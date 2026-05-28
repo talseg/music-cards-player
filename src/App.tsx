@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import type { ChangeEvent } from 'react'
 import styled from 'styled-components'
 import { Html5Qrcode } from 'html5-qrcode'
 import { version } from '../package.json'
@@ -9,6 +10,7 @@ import {
   pauseTrack,
   resumeTrack,
   seekToStart,
+  seekTo,
   extractTrackUri,
   type SpotifyPlayer,
   type TrackInfo,
@@ -77,6 +79,16 @@ const AppWrapper = styled.div`
   gap: 18px;
 `
 
+const Footer = styled.div`
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+`
+
 const VersionLabel = styled.div`
   font-size: 0.75rem;
   color: #888;
@@ -94,9 +106,8 @@ const CreditLabel = styled.div`
 `
 
 const UserLabel = styled.div`
-  font-size: 0.9rem;
-  color: #1db954;
-  font-weight: 500;
+  font-size: 0.75rem;
+  color: #888;
 `
 
 const StatusText = styled.div`
@@ -214,6 +225,28 @@ const DebugBox = styled.div`
   max-width: 400px;
 `
 
+const SeekBarWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  width: 280px;
+  max-width: 100%;
+`
+
+const SeekSlider = styled.input`
+  width: 100%;
+  accent-color: #1db954;
+  cursor: pointer;
+`
+
+const TimeRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #888;
+`
+
 // ---------------------------------------------------------------------------
 // Icons (standard play / pause / restart glyphs)
 // ---------------------------------------------------------------------------
@@ -229,9 +262,9 @@ const PauseIcon = () => (
   </svg>
 )
 
-const RestartIcon = () => (
+const SkipToStartIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-    <path d="M12 5V1L7 6l5 5V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z" />
+    <path d="M6 6h2v12H6zM18 6l-9 6 9 6z" />
   </svg>
 )
 
@@ -245,6 +278,14 @@ function isRedirectUriError(message: string): boolean {
   return m.includes('redirect') && m.includes('uri')
 }
 
+// Format milliseconds as m:ss for the seek bar labels.
+function formatTime(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000))
+  const minutes = Math.floor(total / 60)
+  const seconds = total % 60
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`
+}
+
 function App() {
   const [auth, setAuth] = useState<AuthPhase>({ kind: 'checking' })
   const [user, setUser] = useState<string | null>(null)
@@ -253,6 +294,20 @@ function App() {
   const scannerRef = useRef<Html5Qrcode | null>(null)
   const playerRef = useRef<SpotifyPlayer | null>(null)
   const playerInitStartedRef = useRef(false)
+
+  // Seek bar: anchor holds the last position we know from the SDK plus the
+  // wall-clock time we learned it, so we can interpolate the playhead between
+  // SDK updates without polling. `displayPosition` is what the slider renders.
+  const positionAnchorRef = useRef<{ position: number; ts: number }>({
+    position: 0,
+    ts: 0,
+  })
+  const [displayPosition, setDisplayPosition] = useState(0)
+  const [duration, setDuration] = useState(0)
+  // While dragging we hold the slider value locally and suppress interpolation
+  // and SDK syncing, so the thumb doesn't fight the user's finger.
+  const [dragValue, setDragValue] = useState<number | null>(null)
+  const dragValueRef = useRef<number | null>(null)
 
   // 1. Handle auth on mount
   useEffect(() => {
@@ -310,6 +365,18 @@ function App() {
     initializePlayer(sdk)
       .then((p) => {
         playerRef.current = p
+
+        // Keep the position anchor and duration in sync with the SDK. This
+        // fires on play/pause/seek and periodically during playback; between
+        // events we interpolate locally (effect 4) for smooth motion.
+        p.player.addListener('player_state_changed', (state) => {
+          if (!state) return
+          if (dragValueRef.current !== null) return // don't fight an active drag
+          positionAnchorRef.current = { position: state.position, ts: Date.now() }
+          setDisplayPosition(state.position)
+          setDuration(state.duration)
+        })
+
         setPhase({ kind: 'idle' })
       })
       .catch((e) => {
@@ -357,6 +424,25 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase.kind])
 
+  // 4. Smoothly interpolate the seek bar while playing. This is render-only:
+  // it advances displayPosition from the anchor using elapsed wall-clock time,
+  // making no SDK or network calls. Clamped to duration at the end.
+  useEffect(() => {
+    if (phase.kind !== 'playing') return
+
+    const id = setInterval(() => {
+      if (dragValueRef.current !== null) return // user is scrubbing
+      const anchor = positionAnchorRef.current
+      const interpolated = anchor.position + (Date.now() - anchor.ts)
+      setDisplayPosition((prev) => {
+        const next = duration > 0 ? Math.min(interpolated, duration) : interpolated
+        return next === prev ? prev : next
+      })
+    }, 200)
+
+    return () => clearInterval(id)
+  }, [phase.kind, duration])
+
   // Fire playback for a freshly-scanned (or retried) track.
   async function startPlayback(trackUri: string) {
     const player = playerRef.current
@@ -369,6 +455,10 @@ function App() {
       // Activate audio element (helps mobile browsers allow playback).
       await player.player.activateElement()
       const info = await playTrack(sdk, player.deviceId, trackUri)
+      // Reset the seek bar for the new track; the state listener will fill in
+      // the real duration moments later.
+      positionAnchorRef.current = { position: 0, ts: Date.now() }
+      setDisplayPosition(0)
       setPhase({ kind: 'playing', trackUri, info })
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Failed to play track'
@@ -409,9 +499,38 @@ function App() {
 
     try {
       await seekToStart(player.player)
+      positionAnchorRef.current = { position: 0, ts: Date.now() }
+      setDisplayPosition(0)
       setPhase({ kind: 'playing', trackUri: phase.trackUri, info: phase.info })
     } catch {
       // Leave state as-is on a transient control failure.
+    }
+  }
+
+  // --- Seek bar drag handlers ----------------------------------------------
+  // While dragging: track the value locally, no SDK calls. On release: seek
+  // once and re-anchor so interpolation resumes from the new position.
+  const handleSeekChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const v = Number(e.target.value)
+    dragValueRef.current = v
+    setDragValue(v)
+  }
+
+  const handleSeekCommit = async () => {
+    const v = dragValueRef.current
+    dragValueRef.current = null
+    setDragValue(null)
+    if (v === null) return
+
+    const player = playerRef.current
+    if (!player) return
+
+    positionAnchorRef.current = { position: v, ts: Date.now() }
+    setDisplayPosition(v)
+    try {
+      await seekTo(player.player, v)
+    } catch {
+      // Leave state as-is on a transient seek failure.
     }
   }
 
@@ -460,11 +579,8 @@ function App() {
 
   return (
     <AppWrapper>
-      <VersionLabel>project version: {version}</VersionLabel>
       <HeaderLabel>♫ My Song ♫</HeaderLabel>
       <CreditLabel>By Tal segal</CreditLabel>
-
-      {showUser && <UserLabel>Logged in as: {user}</UserLabel>}
 
       {auth.kind === 'checking' && <StatusText>Checking login...</StatusText>}
 
@@ -525,9 +641,29 @@ function App() {
                   disabled={fromStartDisabled}
                   aria-label="Play from start"
                 >
-                  <RestartIcon />
+                  <SkipToStartIcon />
                 </IconButton>
               </Controls>
+
+              {(phase.kind === 'playing' || phase.kind === 'paused') && (
+                <SeekBarWrapper>
+                  <SeekSlider
+                    type="range"
+                    min={0}
+                    max={duration || 1}
+                    value={Math.min(dragValue ?? displayPosition, duration || Infinity)}
+                    onChange={handleSeekChange}
+                    onMouseUp={handleSeekCommit}
+                    onTouchEnd={handleSeekCommit}
+                    aria-label="Seek"
+                  />
+                  <TimeRow>
+                    <span>{formatTime(dragValue ?? displayPosition)}</span>
+                    <span>{formatTime(duration)}</span>
+                  </TimeRow>
+                </SeekBarWrapper>
+              )}
+
               <NextButton onClick={handleNextSong}>Next Song</NextButton>
 
               {IS_DEBUG &&
@@ -541,6 +677,11 @@ function App() {
           )}
         </>
       )}
+
+      <Footer>
+        <VersionLabel>project version: {version}</VersionLabel>
+        {showUser && <UserLabel>Logged in as: {user}</UserLabel>}
+      </Footer>
     </AppWrapper>
   )
 }
