@@ -18,7 +18,7 @@ import {
 
 // When true, reveal the scanned song's name, artist and year (for debugging).
 // Flip to false for the real "blind" game experience.
-const IS_DEBUG = true
+const IS_DEBUG = false
 
 const SCANNER_ELEMENT_ID = 'qr-reader'
 
