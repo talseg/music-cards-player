@@ -294,6 +294,10 @@ function App() {
   const scannerRef = useRef<Html5Qrcode | null>(null)
   const playerRef = useRef<SpotifyPlayer | null>(null)
   const playerInitStartedRef = useRef(false)
+  // Mirror of `phase` so the (once-registered) SDK listener can read the
+  // current phase without a stale closure.
+  const phaseRef = useRef<PlayerPhase>(phase)
+  phaseRef.current = phase
 
   // Seek bar: anchor holds the last position we know from the SDK plus the
   // wall-clock time we learned it, so we can interpolate the playhead between
@@ -308,6 +312,10 @@ function App() {
   // and SDK syncing, so the thumb doesn't fight the user's finger.
   const [dragValue, setDragValue] = useState<number | null>(null)
   const dragValueRef = useRef<number | null>(null)
+  // Wall-clock time the current track started playing. Used to ignore the
+  // transient paused/position-0 states the SDK emits during track start-up,
+  // so they aren't mistaken for the track ending.
+  const playbackStartedAtRef = useRef<number>(0)
 
   // 1. Handle auth on mount
   useEffect(() => {
@@ -372,6 +380,30 @@ function App() {
         p.player.addListener('player_state_changed', (state) => {
           if (!state) return
           if (dragValueRef.current !== null) return // don't fight an active drag
+
+          const current = phaseRef.current
+
+          // End-of-track detection. The SDK has no clean "track ended" event;
+          // at the natural end it emits a state with paused:true and position
+          // reset to 0. We only act on this while we believe we're playing,
+          // and only after the track has been playing a few seconds, to ignore
+          // the transient paused/position-0 states emitted during start-up.
+          // A manual mid-song pause keeps position > 0, so position===0 plus
+          // paused is a reliable "the track finished" signal for single tracks.
+          const elapsedSinceStart = Date.now() - playbackStartedAtRef.current
+          const looksEnded =
+            state.paused && state.position === 0 && elapsedSinceStart > 3000
+
+          if (looksEnded && current.kind === 'playing') {
+            positionAnchorRef.current = { position: 0, ts: Date.now() }
+            setDisplayPosition(0)
+            // Ensure the playhead really is at 0 and the player is paused,
+            // leaving a clean "ready to replay" state.
+            p.player.seek(0).catch(() => {})
+            setPhase({ kind: 'paused', trackUri: current.trackUri, info: current.info })
+            return
+          }
+
           positionAnchorRef.current = { position: state.position, ts: Date.now() }
           setDisplayPosition(state.position)
           setDuration(state.duration)
@@ -458,6 +490,7 @@ function App() {
       // Reset the seek bar for the new track; the state listener will fill in
       // the real duration moments later.
       positionAnchorRef.current = { position: 0, ts: Date.now() }
+      playbackStartedAtRef.current = Date.now()
       setDisplayPosition(0)
       setPhase({ kind: 'playing', trackUri, info })
     } catch (e) {
@@ -485,6 +518,7 @@ function App() {
     } else if (phase.kind === 'paused') {
       try {
         await resumeTrack(player.player)
+        playbackStartedAtRef.current = Date.now()
         setPhase({ kind: 'playing', trackUri: phase.trackUri, info: phase.info })
       } catch {
         // Leave state as-is on a transient control failure.
@@ -500,6 +534,7 @@ function App() {
     try {
       await seekToStart(player.player)
       positionAnchorRef.current = { position: 0, ts: Date.now() }
+      playbackStartedAtRef.current = Date.now()
       setDisplayPosition(0)
       setPhase({ kind: 'playing', trackUri: phase.trackUri, info: phase.info })
     } catch {
