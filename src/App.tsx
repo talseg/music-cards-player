@@ -3,7 +3,7 @@ import type { ChangeEvent } from 'react'
 import styled from 'styled-components'
 import { Html5Qrcode } from 'html5-qrcode'
 import { version } from '../package.json'
-import { createSpotifyApi } from './spotify-auth'
+import { createAuth, type InitAuthResult } from './auth/spotify-auth'
 import {
   initializePlayer,
   playTrack,
@@ -22,19 +22,20 @@ const IS_DEBUG = false
 
 const SCANNER_ELEMENT_ID = 'qr-reader'
 
-// Create SDK once at module load
-const sdk = createSpotifyApi()
-
-// Check if SDK has a cached token without triggering its auto-redirect
-function hasStoredToken(): boolean {
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i)
-    if (key && (key.includes('spotify-sdk') || key.includes('AuthorizationCode'))) {
-      return true
-    }
-  }
-  return false
-}
+// Create the auth bundle once at module load. The shared module (src/auth) is
+// app-agnostic; everything app-specific about auth lives in this config.
+const auth_ = createAuth({
+  clientId: import.meta.env.VITE_SPOTIFY_CLIENT_ID as string,
+  scopes: [
+    'streaming',
+    'user-read-email',
+    'user-read-private',
+    'user-modify-playback-state',
+    'user-read-playback-state',
+  ],
+  cachePrefix: 'music-cards-player:',
+})
+const sdk = auth_.sdk
 
 // ---------------------------------------------------------------------------
 // State machine
@@ -108,6 +109,20 @@ const CreditLabel = styled.div`
 const UserLabel = styled.div`
   font-size: 0.75rem;
   color: #888;
+`
+
+const LogoutLink = styled.button`
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.75rem;
+  color: #888;
+  text-decoration: underline;
+  cursor: pointer;
+
+  &:hover {
+    color: #555;
+  }
 `
 
 const StatusText = styled.div`
@@ -271,11 +286,32 @@ const SkipToStartIcon = () => (
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-// Detect the Spotify "redirect URI not registered" failure so we can give a
-// precise, actionable hint pointing at the dashboard.
-function isRedirectUriError(message: string): boolean {
-  const m = message.toLowerCase()
-  return m.includes('redirect') && m.includes('uri')
+// Map the shared auth module's neutral result onto this app's AuthPhase model.
+// (The error classification itself lives in src/auth/spotify-auth.ts.)
+function toAuthPhase(result: InitAuthResult): { phase: AuthPhase; user: string | null } {
+  if (result.ok) {
+    return { phase: { kind: 'ready' }, user: result.user }
+  }
+  switch (result.kind) {
+    case 'no-session':
+      return { phase: { kind: 'login', reason: 'Please login' }, user: null }
+    case 'expired':
+      return { phase: { kind: 'login', reason: 'Session expired, please log in again' }, user: null }
+    case 'stale-callback':
+      // Partial state was cleared by the shared module; user can simply retry.
+      return { phase: { kind: 'login', reason: 'Please login' }, user: null }
+    case 'redirect-uri':
+      return {
+        phase: {
+          kind: 'fatal',
+          message: `Please add ${result.redirectUri} to https://developer.spotify.com/dashboard\n\n${result.message}`,
+          showUser: false,
+        },
+        user: null,
+      }
+    case 'error':
+      return { phase: { kind: 'fatal', message: result.message, showUser: false }, user: null }
+  }
 }
 
 // Format milliseconds as m:ss for the seek bar labels.
@@ -317,51 +353,21 @@ function App() {
   // so they aren't mistaken for the track ending.
   const playbackStartedAtRef = useRef<number>(0)
 
-  // 1. Handle auth on mount
+  // 1. Handle auth on mount.
+  // The actual work is memoized inside the shared auth module (getInitAuth),
+  // so the one-time OAuth code exchange runs exactly once even though
+  // StrictMode invokes this effect twice in dev. Both invocations await the
+  // same promise; whichever is still mounted applies the result, so the UI
+  // always leaves the 'checking' state.
   useEffect(() => {
-    async function initAuth() {
-      const isCallback = window.location.search.includes('code=')
-      const hadToken = hasStoredToken()
-
-      // No callback code and no stored token => first visit, show login.
-      if (!isCallback && !hadToken) {
-        setAuth({ kind: 'login', reason: 'Please login' })
-        return
-      }
-
-      try {
-        const profile = await sdk.currentUser.profile()
-        setUser(profile.display_name || profile.email)
-
-        if (isCallback) {
-          window.history.replaceState({}, '', '/')
-        }
-        setAuth({ kind: 'ready' })
-      } catch (e) {
-        const message = e instanceof Error ? e.message : String(e)
-
-        // A stored token that no longer works => session expired, back to login.
-        if (hadToken && !isCallback) {
-          setAuth({ kind: 'login', reason: 'Session expired, please log in again' })
-          return
-        }
-
-        // Redirect-URI mismatch is the common setup mistake: surface a precise hint.
-        if (isRedirectUriError(message)) {
-          const redirectUri = `${window.location.origin}/callback`
-          setAuth({
-            kind: 'fatal',
-            message: `Please add ${redirectUri} to https://developer.spotify.com/dashboard\n\n${message}`,
-            showUser: false,
-          })
-          return
-        }
-
-        // Any other auth-phase failure is fatal (login not established).
-        setAuth({ kind: 'fatal', message, showUser: false })
-      }
-    }
-    initAuth()
+    let cancelled = false
+    auth_.getInitAuth().then(result => {
+      if (cancelled) return
+      const { phase: nextAuth, user: nextUser } = toAuthPhase(result)
+      setUser(nextUser)
+      setAuth(nextAuth)
+    })
+    return () => { cancelled = true }
   }, [])
 
   // 2. Initialize player once authenticated
@@ -502,6 +508,22 @@ function App() {
   // --- Button handlers ------------------------------------------------------
   const handleLogin = () => {
     sdk.authenticate()
+  }
+
+  // Logout: best-effort stop playback and release the playback device, clear
+  // this app's stored auth, and return to the same screen as a fresh visit.
+  const handleLogout = () => {
+    const player = playerRef.current
+    if (player) {
+      pauseTrack(player.player).catch(() => {})
+      player.player.disconnect()
+      playerRef.current = null
+    }
+    playerInitStartedRef.current = false
+    auth_.clearStoredAuth()
+    setUser(null)
+    setPhase({ kind: 'init' })
+    setAuth({ kind: 'login', reason: 'Please login' })
   }
 
   const handlePlayPause = async () => {
@@ -715,7 +737,12 @@ function App() {
 
       <Footer>
         <VersionLabel>project version: {version}</VersionLabel>
-        {showUser && <UserLabel>Logged in as: {user}</UserLabel>}
+        {showUser && (
+          <UserLabel>
+            Logged in as: {user}{' '}
+            <LogoutLink onClick={handleLogout}>logout</LogoutLink>
+          </UserLabel>
+        )}
       </Footer>
     </AppWrapper>
   )
