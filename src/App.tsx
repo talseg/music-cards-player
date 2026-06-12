@@ -91,7 +91,7 @@ const Footer = styled.div`
 `
 
 const VersionLabel = styled.div`
-  font-size: 0.75rem;
+  font-size: 0.90rem;
   color: #888;
 `
 
@@ -107,7 +107,7 @@ const CreditLabel = styled.div`
 `
 
 const UserLabel = styled.div`
-  font-size: 0.75rem;
+  font-size: 0.90rem;
   color: #888;
 `
 
@@ -115,7 +115,7 @@ const LogoutLink = styled.button`
   background: none;
   border: none;
   padding: 0;
-  font-size: 0.75rem;
+  font-size: 0.90rem;
   color: #888;
   text-decoration: underline;
   cursor: pointer;
@@ -478,7 +478,6 @@ function App() {
       }
       scannerRef.current = null
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase.kind])
 
   // 4. Smoothly interpolate the seek bar while playing. This is render-only:
