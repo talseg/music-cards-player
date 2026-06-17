@@ -389,6 +389,21 @@ function App() {
 
           const current = phaseRef.current
 
+          if (IS_DEBUG) {
+            // DEBUG: log every raw event so the full settling sequence is captured
+            // in the console (filter by "SEEKDBG"). Remove when diagnosis is done.
+            console.log(
+              'SEEKDBG evt',
+              'loading=' + state.loading,
+              'paused=' + state.paused,
+              'pos=' + state.position,
+              'dur=' + state.duration,
+              'uri=' + (state.track_window?.current_track?.uri ?? '-').slice(-8),
+              'phase=' + current.kind,
+              '| render displayPos=' + displayPosition + ' duration=' + duration
+            )
+        }
+
           // Determine whether this event belongs to the track we are currently
           // showing. Events for other tracks (e.g. the previous track's pause
           // announcement emitted by transferPlayback when starting a new song)
@@ -516,6 +531,13 @@ function App() {
       positionAnchorRef.current = { position: 0, ts: Date.now() }
       playbackStartedAtRef.current = Date.now()
       setDisplayPosition(0)
+      if (IS_DEBUG) {
+        console.log(
+          'SEEKDBG --- NEW TRACK START ---',
+          'uri=' + trackUri.slice(-8),
+          '| at reset: displayPos=' + displayPosition + ' duration=' + duration
+        )
+      }
       setPhase({ kind: 'playing', trackUri, info })
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Failed to play track'
