@@ -3,6 +3,7 @@ import type { ChangeEvent } from 'react'
 import styled from 'styled-components'
 import { Html5Qrcode } from 'html5-qrcode'
 import { createAuth, type InitAuthResult } from './auth/spotify-auth'
+import type { AuthPhase, PlayerPhase } from './common/types'
 import FooterBar from './components/FooterBar'
 import LoginPanel from './components/LoginPanel'
 import PlaybackFailedPanel from './components/PlaybackFailedPanel'
@@ -18,7 +19,6 @@ import {
   seekTo,
   extractTrackUri,
   type SpotifyPlayer,
-  type TrackInfo,
 } from './spotify-player'
 
 // When true, reveal the scanned song's name, artist and year (for debugging).
@@ -41,38 +41,6 @@ const auth_ = createAuth({
   cachePrefix: 'music-cards-player:',
 })
 const sdk = auth_.sdk
-
-// ---------------------------------------------------------------------------
-// State machine
-// ---------------------------------------------------------------------------
-// Auth phase (gates the whole app):
-//   'checking'  - verifying stored token / handling callback on mount
-//   'login'     - show Login screen (carries a reason to display)
-//   'ready'     - authenticated; player phase below takes over
-//   'fatal'     - unrecoverable auth/credentials error (debug dump)
-//
-// Player phase (only meaningful once auth === 'ready'):
-//   'init'         - initializing the Web Playback SDK device
-//   'idle'         - no song loaded yet; only "Next Song" enabled
-//   'scanning'     - camera overlay open
-//   'loading'      - scan succeeded, waiting for playback to confirm
-//   'playing'      - a song is loaded and playing
-//   'paused'       - a song is loaded and paused
-//   'playbackFailed' - soft error; offer Try again / Cancel
-type AuthPhase =
-  | { kind: 'checking' }
-  | { kind: 'login'; reason: string }
-  | { kind: 'ready' }
-  | { kind: 'fatal'; message: string; showUser: boolean }
-
-type PlayerPhase =
-  | { kind: 'init' }
-  | { kind: 'idle' }
-  | { kind: 'scanning' }
-  | { kind: 'loading'; trackUri: string }
-  | { kind: 'playing'; trackUri: string; info: TrackInfo }
-  | { kind: 'paused'; trackUri: string; info: TrackInfo }
-  | { kind: 'playbackFailed'; trackUri: string; message: string }
 
 // ---------------------------------------------------------------------------
 // Styled components
