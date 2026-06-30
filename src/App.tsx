@@ -4,6 +4,7 @@ import styled from 'styled-components'
 import { Html5Qrcode } from 'html5-qrcode'
 import { createAuth, type InitAuthResult } from './auth/spotify-auth'
 import FooterBar from './components/FooterBar'
+import LoginPanel from './components/LoginPanel'
 import PlaybackFailedPanel from './components/PlaybackFailedPanel'
 import PlaybackControls from './components/PlaybackControls'
 import QRScanner from './components/QRScanner'
@@ -98,26 +99,6 @@ const CreditLabel = styled.div`
 const StatusText = styled.div`
   font-size: 0.85rem;
   color: #888;
-`
-
-const LoginReason = styled.div`
-  font-size: 1rem;
-  color: #333;
-`
-
-const SpotifyButton = styled.button`
-  font-size: 1rem;
-  padding: 12px 32px;
-  border: none;
-  border-radius: 24px;
-  background: #1db954;
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-
-  &:hover {
-    background: #17a349;
-  }
 `
 
 const NextButton = styled.button`
@@ -565,10 +546,7 @@ function App() {
       {auth.kind === 'checking' && <StatusText>Checking login...</StatusText>}
 
       {auth.kind === 'login' && (
-        <>
-          <LoginReason>{auth.reason}</LoginReason>
-          <SpotifyButton onClick={handleLogin}>Login</SpotifyButton>
-        </>
+        <LoginPanel reason={auth.reason} onLogin={handleLogin} />
       )}
 
       {auth.kind === 'fatal' && <ErrorText>{auth.message}</ErrorText>}
