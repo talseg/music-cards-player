@@ -115,9 +115,9 @@ function App() {
     auth,
     setAuth,
     user,
-    setUser,
     showUser,
     handleLogin,
+    handleLogout,
     handleReload,
   } = useAuth(auth_)
   const {
@@ -144,16 +144,6 @@ function App() {
     setPhase,
     startPlayback,
   })
-
-  // --- Button handlers ------------------------------------------------------
-  // Logout: best-effort stop playback and release the playback device, clear
-  // this app's stored auth, and return to the same screen as a fresh visit.
-  const handleLogout = () => {
-    resetPlaybackForLogout()
-    auth_.clearStoredAuth()
-    setUser(null)
-    setAuth({ kind: 'login', reason: 'Please login' })
-  }
 
   // Cancel from the scanner or loading => return to idle (no song to fall back to).
   const handleCancelToIdle = () => {
@@ -251,7 +241,11 @@ function App() {
         </>
       )}
 
-      <FooterBar showUser={showUser} user={user} onLogout={handleLogout} />
+      <FooterBar
+        showUser={showUser}
+        user={user}
+        onLogout={() => handleLogout(resetPlaybackForLogout)}
+      />
     </AppWrapper>
   )
 }

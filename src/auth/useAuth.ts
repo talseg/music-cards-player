@@ -8,9 +8,9 @@ interface UseAuthReturn {
   auth: AuthPhase
   setAuth: Dispatch<SetStateAction<AuthPhase>>
   user: string | null
-  setUser: Dispatch<SetStateAction<string | null>>
   showUser: boolean
   handleLogin: () => void
+  handleLogout: (beforeLogout: () => void) => void
   handleReload: () => void
 }
 
@@ -38,6 +38,13 @@ export function useAuth(spotifyAuth: Auth): UseAuthReturn {
     spotifyAuth.sdk.authenticate()
   }
 
+  const handleLogout = (beforeLogout: () => void) => {
+    beforeLogout()
+    spotifyAuth.clearStoredAuth()
+    setUser(null)
+    setAuth({ kind: 'login', reason: 'Please login' })
+  }
+
   const handleReload = () => {
     window.location.reload()
   }
@@ -50,9 +57,9 @@ export function useAuth(spotifyAuth: Auth): UseAuthReturn {
     auth,
     setAuth,
     user,
-    setUser,
     showUser,
     handleLogin,
+    handleLogout,
     handleReload,
   }
 }
