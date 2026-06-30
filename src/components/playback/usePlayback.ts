@@ -11,6 +11,7 @@ import {
   seekToStart,
   type SpotifyPlayer,
 } from '../../spotify-player'
+import { isLikelyTrackEnd, isStateForCurrentTrack } from './playback-state-utils'
 
 interface UsePlaybackArgs {
   auth: AuthPhase
@@ -101,33 +102,11 @@ export function usePlayback({ auth, setAuth, sdk, isDebug }: UsePlaybackArgs): U
             )
           }
 
-          // Determine whether this event belongs to the track we are currently
-          // showing. Events for other tracks (e.g. the previous track's pause
-          // announcement emitted by transferPlayback when starting a new song)
-          // must not touch the seek bar or trigger end-of-track detection.
-          // We check linked_from as well to handle Spotify track relinking,
-          // where current_track.uri is a substitute and differs from the uri
-          // we requested.
-          const eventUri = state.track_window?.current_track?.uri
-          const linkedUri = state.track_window?.current_track?.linked_from?.uri
-          const phaseUri =
-            current.kind === 'playing' || current.kind === 'paused'
-              ? current.trackUri
-              : null
-          const isOurTrack =
-            phaseUri != null &&
-            (eventUri === phaseUri || linkedUri === phaseUri)
-
-          // End-of-track detection. The SDK has no clean "track ended" event;
-          // at the natural end it emits a state with paused:true and position
-          // reset to 0. We only act on this while we believe we're playing,
-          // and only after the track has been playing a few seconds, to ignore
-          // the transient paused/position-0 states emitted during start-up.
-          // A manual mid-song pause keeps position > 0, so position===0 plus
-          // paused is a reliable "the track finished" signal for single tracks.
-          const elapsedSinceStart = Date.now() - playbackStartedAtRef.current
-          const looksEnded =
-            state.paused && state.position === 0 && elapsedSinceStart > 3000
+          const isOurTrack = isStateForCurrentTrack(state, current)
+          const looksEnded = isLikelyTrackEnd(
+            state,
+            Date.now() - playbackStartedAtRef.current
+          )
 
           if (isOurTrack && looksEnded && current.kind === 'playing') {
             positionAnchorRef.current = { position: 0, ts: Date.now() }
