@@ -3,14 +3,14 @@ import type { ChangeEvent } from 'react'
 import styled from 'styled-components'
 import { Html5Qrcode } from 'html5-qrcode'
 import { createAuth } from './auth/spotify-auth'
-import { toAuthPhase } from './auth/auth-utils'
-import type { AuthPhase, PlayerPhase } from './common/types'
+import type { PlayerPhase } from './common/types'
 import FooterBar from './components/FooterBar'
 import LoginPanel from './components/LoginPanel'
 import PlaybackFailedPanel from './components/PlaybackFailedPanel'
 import PlaybackControls from './components/PlaybackControls'
 import QRScanner from './components/QRScanner'
 import SeekBar from './components/SeekBar'
+import { useAuth } from './hooks/useAuth'
 import {
   initializePlayer,
   playTrack,
@@ -123,8 +123,15 @@ const DebugBox = styled.div`
 `
 
 function App() {
-  const [auth, setAuth] = useState<AuthPhase>({ kind: 'checking' })
-  const [user, setUser] = useState<string | null>(null)
+  const {
+    auth,
+    setAuth,
+    user,
+    setUser,
+    showUser,
+    handleLogin,
+    handleReload,
+  } = useAuth(auth_)
   const [phase, setPhase] = useState<PlayerPhase>({ kind: 'init' })
 
   const scannerRef = useRef<Html5Qrcode | null>(null)
@@ -153,24 +160,7 @@ function App() {
   // so they aren't mistaken for the track ending.
   const playbackStartedAtRef = useRef<number>(0)
 
-  // 1. Handle auth on mount.
-  // The actual work is memoized inside the shared auth module (getInitAuth),
-  // so the one-time OAuth code exchange runs exactly once even though
-  // StrictMode invokes this effect twice in dev. Both invocations await the
-  // same promise; whichever is still mounted applies the result, so the UI
-  // always leaves the 'checking' state.
-  useEffect(() => {
-    let cancelled = false
-    auth_.getInitAuth().then(result => {
-      if (cancelled) return
-      const { phase: nextAuth, user: nextUser } = toAuthPhase(result)
-      setUser(nextUser)
-      setAuth(nextAuth)
-    })
-    return () => { cancelled = true }
-  }, [])
-
-  // 2. Initialize player once authenticated
+  // 1. Initialize player once authenticated
   useEffect(() => {
     if (auth.kind !== 'ready' || playerInitStartedRef.current) return
     playerInitStartedRef.current = true
@@ -259,7 +249,7 @@ function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth])
 
-  // 3. QR scanner lifecycle - runs only while in the 'scanning' phase
+  // 2. QR scanner lifecycle - runs only while in the 'scanning' phase
   useEffect(() => {
     if (phase.kind !== 'scanning') return
 
@@ -297,7 +287,7 @@ function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase.kind])
 
-  // 4. Smoothly interpolate the seek bar while playing. This is render-only:
+  // 3. Smoothly interpolate the seek bar while playing. This is render-only:
   // it advances displayPosition from the anchor using elapsed wall-clock time,
   // making no SDK or network calls. Clamped to duration at the end.
   useEffect(() => {
@@ -348,10 +338,6 @@ function App() {
   }
 
   // --- Button handlers ------------------------------------------------------
-  const handleLogin = () => {
-    sdk.authenticate()
-  }
-
   // Logout: best-effort stop playback and release the playback device, clear
   // this app's stored auth, and return to the same screen as a fresh visit.
   const handleLogout = () => {
@@ -463,15 +449,7 @@ function App() {
     void startPlayback(trackUri)
   }
 
-  const handleReload = () => {
-    window.location.reload()
-  }
-
   // --- Render ---------------------------------------------------------------
-  const showUser =
-    user !== null &&
-    (auth.kind === 'ready' || (auth.kind === 'fatal' && auth.showUser))
-
   const playPauseDisabled = !(phase.kind === 'playing' || phase.kind === 'paused')
   const isPlaying = phase.kind === 'playing'
   const fromStartDisabled = playPauseDisabled
