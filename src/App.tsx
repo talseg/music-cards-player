@@ -6,6 +6,7 @@ import { createAuth, type InitAuthResult } from './auth/spotify-auth'
 import FooterBar from './components/FooterBar'
 import PlaybackFailedPanel from './components/PlaybackFailedPanel'
 import PlaybackControls from './components/PlaybackControls'
+import QRScanner from './components/QRScanner'
 import SeekBar from './components/SeekBar'
 import {
   initializePlayer,
@@ -137,11 +138,6 @@ const NextButton = styled.button`
     cursor: not-allowed;
     opacity: 0.4;
   }
-`
-
-const ScannerBox = styled.div`
-  width: 300px;
-  max-width: 100%;
 `
 
 const SecondaryButton = styled.button`
@@ -585,10 +581,10 @@ function App() {
           {phase.kind === 'init' && <StatusText>Initializing player...</StatusText>}
 
           {phase.kind === 'scanning' && (
-            <>
-              <ScannerBox id={SCANNER_ELEMENT_ID} />
-              <SecondaryButton onClick={handleCancelToIdle}>Cancel</SecondaryButton>
-            </>
+            <QRScanner
+              scannerElementId={SCANNER_ELEMENT_ID}
+              onCancel={handleCancelToIdle}
+            />
           )}
 
           {phase.kind === 'loading' && (
