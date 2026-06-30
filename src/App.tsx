@@ -4,6 +4,7 @@ import styled from 'styled-components'
 import { Html5Qrcode } from 'html5-qrcode'
 import { createAuth, type InitAuthResult } from './auth/spotify-auth'
 import FooterBar from './components/FooterBar'
+import SeekBar from './components/SeekBar'
 import {
   initializePlayer,
   playTrack,
@@ -206,28 +207,6 @@ const DebugBox = styled.div`
   max-width: 400px;
 `
 
-const SeekBarWrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 4px;
-  width: 280px;
-  max-width: 100%;
-`
-
-const SeekSlider = styled.input`
-  width: 100%;
-  accent-color: #1db954;
-  cursor: pointer;
-`
-
-const TimeRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.75rem;
-  color: #888;
-`
-
 // ---------------------------------------------------------------------------
 // Icons (standard play / pause / restart glyphs)
 // ---------------------------------------------------------------------------
@@ -278,14 +257,6 @@ function toAuthPhase(result: InitAuthResult): { phase: AuthPhase; user: string |
     case 'error':
       return { phase: { kind: 'fatal', message: result.message, showUser: false }, user: null }
   }
-}
-
-// Format milliseconds as m:ss for the seek bar labels.
-function formatTime(ms: number): string {
-  const total = Math.max(0, Math.floor(ms / 1000))
-  const minutes = Math.floor(total / 60)
-  const seconds = total % 60
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
 
 function App() {
@@ -711,22 +682,13 @@ function App() {
               </Controls>
 
               {(phase.kind === 'playing' || phase.kind === 'paused') && (
-                <SeekBarWrapper>
-                  <SeekSlider
-                    type="range"
-                    min={0}
-                    max={duration || 1}
-                    value={Math.min(dragValue ?? displayPosition, duration || Infinity)}
-                    onChange={handleSeekChange}
-                    onMouseUp={handleSeekCommit}
-                    onTouchEnd={handleSeekCommit}
-                    aria-label="Seek"
-                  />
-                  <TimeRow>
-                    <span>{formatTime(dragValue ?? displayPosition)}</span>
-                    <span>{formatTime(duration)}</span>
-                  </TimeRow>
-                </SeekBarWrapper>
+                <SeekBar
+                  duration={duration}
+                  displayPosition={displayPosition}
+                  dragValue={dragValue}
+                  onSeekChange={handleSeekChange}
+                  onSeekCommit={handleSeekCommit}
+                />
               )}
 
               <NextButton onClick={handleNextSong}>Next Song</NextButton>
