@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, Dispatch, SetStateAction } from 'react'
 import type { SpotifyApi } from '@spotify/web-api-ts-sdk'
-import type { AuthPhase, PlayerPhase } from '../common/types'
+import type { AuthPhase, PlayerPhase } from '../../common/types'
 import {
   initializePlayer,
   pauseTrack,
@@ -10,7 +10,7 @@ import {
   seekTo,
   seekToStart,
   type SpotifyPlayer,
-} from '../spotify-player'
+} from '../../spotify-player'
 
 interface UsePlaybackArgs {
   auth: AuthPhase
