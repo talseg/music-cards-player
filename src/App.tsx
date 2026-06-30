@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import type { ChangeEvent } from 'react'
 import styled from 'styled-components'
 import { Html5Qrcode } from 'html5-qrcode'
-import { version } from '../package.json'
 import { createAuth, type InitAuthResult } from './auth/spotify-auth'
+import FooterBar from './components/FooterBar'
 import {
   initializePlayer,
   playTrack,
@@ -80,21 +80,6 @@ const AppWrapper = styled.div`
   gap: 18px;
 `
 
-const Footer = styled.div`
-  position: fixed;
-  left: 12px;
-  bottom: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  text-align: left;
-`
-
-const VersionLabel = styled.div`
-  font-size: 0.90rem;
-  color: #888;
-`
-
 const HeaderLabel = styled.div`
   font-size: 1.75rem;
   color: #d41c1c;
@@ -104,25 +89,6 @@ const HeaderLabel = styled.div`
 const CreditLabel = styled.div`
   font-size: 1.2rem;
   color: #1c2ed4;
-`
-
-const UserLabel = styled.div`
-  font-size: 0.90rem;
-  color: #888;
-`
-
-const LogoutLink = styled.button`
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: 0.90rem;
-  color: #888;
-  text-decoration: underline;
-  cursor: pointer;
-
-  &:hover {
-    color: #555;
-  }
 `
 
 const StatusText = styled.div`
@@ -456,6 +422,7 @@ function App() {
         // Player init failed but the user IS logged in => keep user shown.
         setAuth({ kind: 'fatal', message, showUser: true })
       })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth])
 
   // 3. QR scanner lifecycle - runs only while in the 'scanning' phase
@@ -493,6 +460,7 @@ function App() {
       }
       scannerRef.current = null
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase.kind])
 
   // 4. Smoothly interpolate the seek bar while playing. This is render-only:
@@ -775,15 +743,7 @@ function App() {
         </>
       )}
 
-      <Footer>
-        <VersionLabel>project version: {version}</VersionLabel>
-        {showUser && (
-          <UserLabel>
-            Logged in as: {user}{' '}
-            <LogoutLink onClick={handleLogout}>logout</LogoutLink>
-          </UserLabel>
-        )}
-      </Footer>
+      <FooterBar showUser={showUser} user={user} onLogout={handleLogout} />
     </AppWrapper>
   )
 }
