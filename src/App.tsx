@@ -4,6 +4,8 @@ import styled from 'styled-components'
 import { Html5Qrcode } from 'html5-qrcode'
 import { createAuth, type InitAuthResult } from './auth/spotify-auth'
 import FooterBar from './components/FooterBar'
+import PlaybackFailedPanel from './components/PlaybackFailedPanel'
+import PlaybackControls from './components/PlaybackControls'
 import SeekBar from './components/SeekBar'
 import {
   initializePlayer,
@@ -117,39 +119,6 @@ const SpotifyButton = styled.button`
   }
 `
 
-const Controls = styled.div`
-  display: flex;
-  gap: 16px;
-  align-items: center;
-`
-
-const IconButton = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 72px;
-  height: 72px;
-  border: 1px solid #ccc;
-  border-radius: 50%;
-  background: #f5f5f5;
-  cursor: pointer;
-  color: #1a1a2e;
-
-  &:hover:not(:disabled) {
-    background: #e8e8e8;
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.4;
-  }
-
-  svg {
-    width: 32px;
-    height: 32px;
-  }
-`
-
 const NextButton = styled.button`
   font-size: 1rem;
   padding: 14px 36px;
@@ -206,27 +175,6 @@ const DebugBox = styled.div`
   text-align: center;
   max-width: 400px;
 `
-
-// ---------------------------------------------------------------------------
-// Icons (standard play / pause / restart glyphs)
-// ---------------------------------------------------------------------------
-const PlayIcon = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-    <path d="M8 5v14l11-7z" />
-  </svg>
-)
-
-const PauseIcon = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-    <path d="M6 5h4v14H6zM14 5h4v14h-4z" />
-  </svg>
-)
-
-const SkipToStartIcon = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-    <path d="M6 6h2v12H6zM18 6l-9 6 9 6z" />
-  </svg>
-)
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -651,35 +599,24 @@ function App() {
           )}
 
           {phase.kind === 'playbackFailed' && (
-            <>
-              <ErrorText>{`Couldn't play this song.\n\n${phase.message}`}</ErrorText>
-              <Controls>
-                <SecondaryButton onClick={handleTryAgain}>Try again</SecondaryButton>
-                <SecondaryButton onClick={handleCancelToIdle}>Cancel</SecondaryButton>
-              </Controls>
-            </>
+            <PlaybackFailedPanel
+              message={phase.message}
+              onTryAgain={handleTryAgain}
+              onCancel={handleCancelToIdle}
+            />
           )}
 
           {(phase.kind === 'idle' ||
             phase.kind === 'playing' ||
             phase.kind === 'paused') && (
             <>
-              <Controls>
-                <IconButton
-                  onClick={handlePlayPause}
-                  disabled={playPauseDisabled}
-                  aria-label={isPlaying ? 'Pause' : 'Play'}
-                >
-                  {isPlaying ? <PauseIcon /> : <PlayIcon />}
-                </IconButton>
-                <IconButton
-                  onClick={handlePlayFromStart}
-                  disabled={fromStartDisabled}
-                  aria-label="Play from start"
-                >
-                  <SkipToStartIcon />
-                </IconButton>
-              </Controls>
+              <PlaybackControls
+                isPlaying={isPlaying}
+                playPauseDisabled={playPauseDisabled}
+                fromStartDisabled={fromStartDisabled}
+                onPlayPause={handlePlayPause}
+                onPlayFromStart={handlePlayFromStart}
+              />
 
               {(phase.kind === 'playing' || phase.kind === 'paused') && (
                 <SeekBar
