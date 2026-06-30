@@ -147,6 +147,8 @@ function App() {
     startPlayback,
   })
 
+  const playerState = phase.kind;
+
   // --- Render ---------------------------------------------------------------
   return (
     <AppWrapper>
@@ -166,23 +168,23 @@ function App() {
 
       {auth.kind === 'ready' && (
         <>
-          {phase.kind === 'init' && <StatusText>Initializing player...</StatusText>}
+          {playerState === 'init' && <StatusText>Initializing player...</StatusText>}
 
-          {phase.kind === 'scanning' && (
+          {playerState === 'scanning' && (
             <QRScanner
               scannerElementId={SCANNER_ELEMENT_ID}
               onCancel={handleCancelToIdle}
             />
           )}
 
-          {phase.kind === 'loading' && (
+          {playerState === 'loading' && (
             <>
               <StatusText>Loading…</StatusText>
               <SecondaryButton onClick={handleCancelToIdle}>Cancel</SecondaryButton>
             </>
           )}
 
-          {phase.kind === 'playbackFailed' && (
+          {playerState === 'playbackFailed' && (
             <PlaybackFailedPanel
               message={phase.message}
               onTryAgain={handleTryAgain}
@@ -190,9 +192,9 @@ function App() {
             />
           )}
 
-          {(phase.kind === 'idle' ||
-            phase.kind === 'playing' ||
-            phase.kind === 'paused') && (
+          {(playerState === 'idle' ||
+            playerState === 'playing' ||
+            playerState === 'paused') && (
             <>
               <PlaybackControls
                 isPlaying={isPlaying}
@@ -202,7 +204,7 @@ function App() {
                 onPlayFromStart={handlePlayFromStart}
               />
 
-              {(phase.kind === 'playing' || phase.kind === 'paused') && (
+              {(playerState === 'playing' || playerState === 'paused') && (
                 <SeekBar
                   duration={duration}
                   displayPosition={displayPosition}
@@ -215,7 +217,7 @@ function App() {
               <NextButton onClick={handleNextSong}>Next Song</NextButton>
 
               {IS_DEBUG &&
-                (phase.kind === 'playing' || phase.kind === 'paused') && (
+                (playerState === 'playing' || playerState === 'paused') && (
                   <DebugBox>
                     {phase.info.name} — {phase.info.artist}
                     {phase.info.year ? ` (${phase.info.year})` : ''}
