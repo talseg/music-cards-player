@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import type { ChangeEvent } from 'react'
 import styled from 'styled-components'
 import { Html5Qrcode } from 'html5-qrcode'
-import { createAuth, type InitAuthResult } from './auth/spotify-auth'
+import { createAuth } from './auth/spotify-auth'
+import toAuthPhase from './auth/auth-utils'
 import type { AuthPhase, PlayerPhase } from './common/types'
 import FooterBar from './components/FooterBar'
 import LoginPanel from './components/LoginPanel'
@@ -120,37 +121,6 @@ const DebugBox = styled.div`
   text-align: center;
   max-width: 400px;
 `
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-// Map the shared auth module's neutral result onto this app's AuthPhase model.
-// (The error classification itself lives in src/auth/spotify-auth.ts.)
-function toAuthPhase(result: InitAuthResult): { phase: AuthPhase; user: string | null } {
-  if (result.ok) {
-    return { phase: { kind: 'ready' }, user: result.user }
-  }
-  switch (result.kind) {
-    case 'no-session':
-      return { phase: { kind: 'login', reason: 'Please login' }, user: null }
-    case 'expired':
-      return { phase: { kind: 'login', reason: 'Session expired, please log in again' }, user: null }
-    case 'stale-callback':
-      // Partial state was cleared by the shared module; user can simply retry.
-      return { phase: { kind: 'login', reason: 'Please login' }, user: null }
-    case 'redirect-uri':
-      return {
-        phase: {
-          kind: 'fatal',
-          message: `Please add ${result.redirectUri} to https://developer.spotify.com/dashboard\n\n${result.message}`,
-          showUser: false,
-        },
-        user: null,
-      }
-    case 'error':
-      return { phase: { kind: 'fatal', message: result.message, showUser: false }, user: null }
-  }
-}
 
 function App() {
   const [auth, setAuth] = useState<AuthPhase>({ kind: 'checking' })
