@@ -32,6 +32,7 @@ interface UsePlaybackReturn {
   resetPlaybackForLogout: () => void
   handlePlayPause: () => Promise<void>
   handlePlayFromStart: () => Promise<void>
+  handleTryAgain: () => void
   handleSeekChange: (e: ChangeEvent<HTMLInputElement>) => void
   handleSeekCommit: () => Promise<void>
   handleNextSong: () => Promise<void>
@@ -205,6 +206,18 @@ export function usePlayback({ auth, setAuth, sdk, isDebug }: UsePlaybackArgs): U
     }
   }
 
+  const handleTryAgain = () => {
+    if (phase.kind !== 'playbackFailed') return
+    const { trackUri } = phase
+    if (!trackUri) {
+      // Camera/scan error with no track => reopen the scanner.
+      setPhase({ kind: 'scanning' })
+      return
+    }
+    setPhase({ kind: 'loading', trackUri })
+    void startPlayback(trackUri)
+  }
+
   function resetPlaybackForLogout() {
     const player = playerRef.current
     if (player) {
@@ -310,6 +323,7 @@ export function usePlayback({ auth, setAuth, sdk, isDebug }: UsePlaybackArgs): U
     resetPlaybackForLogout,
     handlePlayPause,
     handlePlayFromStart,
+    handleTryAgain,
     handleSeekChange,
     handleSeekCommit,
     handleNextSong,

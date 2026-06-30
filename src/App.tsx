@@ -133,6 +133,7 @@ function App() {
     resetPlaybackForLogout,
     handlePlayPause,
     handlePlayFromStart,
+    handleTryAgain,
     handleSeekChange,
     handleSeekCommit,
     handleNextSong,
@@ -148,18 +149,6 @@ function App() {
   // Cancel from the scanner or loading => return to idle (no song to fall back to).
   const handleCancelToIdle = () => {
     setPhase({ kind: 'idle' })
-  }
-
-  const handleTryAgain = () => {
-    if (phase.kind !== 'playbackFailed') return
-    const { trackUri } = phase
-    if (!trackUri) {
-      // Camera/scan error with no track => reopen the scanner.
-      setPhase({ kind: 'scanning' })
-      return
-    }
-    setPhase({ kind: 'loading', trackUri })
-    void startPlayback(trackUri)
   }
 
   // --- Render ---------------------------------------------------------------
