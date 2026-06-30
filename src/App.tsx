@@ -1,18 +1,14 @@
-import { useEffect, useRef } from 'react'
 import styled from 'styled-components'
-import { Html5Qrcode } from 'html5-qrcode'
 import { createAuth } from './auth/spotify-auth'
 import FooterBar from './components/FooterBar'
 import LoginPanel from './components/LoginPanel'
 import PlaybackFailedPanel from './components/playback/PlaybackFailedPanel'
 import PlaybackControls from './components/playback/PlaybackControls'
-import QRScanner from './components/QRScanner'
+import QRScanner from './components/qr-scanner/QRScanner'
 import SeekBar from './components/SeekBar'
 import { useAuth } from './auth/useAuth'
 import { usePlayback } from './components/playback/usePlayback'
-import {
-  extractTrackUri,
-} from './spotify-player'
+import { useQRScanner } from './components/qr-scanner/useQRScanner'
 
 // When true, reveal the scanned song's name, artist and year (for debugging).
 // Flip to false for the real "blind" game experience.
@@ -142,45 +138,12 @@ function App() {
     handleNextSong,
   } = usePlayback({ auth, setAuth, sdk, isDebug: IS_DEBUG })
 
-  const scannerRef = useRef<Html5Qrcode | null>(null)
-
-  // QR scanner lifecycle - runs only while in the 'scanning' phase
-  useEffect(() => {
-    if (phase.kind !== 'scanning') return
-
-    const html5QrCode = new Html5Qrcode(SCANNER_ELEMENT_ID)
-    scannerRef.current = html5QrCode
-
-    html5QrCode
-      .start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        (decodedText) => {
-          const trackUri = extractTrackUri(decodedText)
-          setPhase({ kind: 'loading', trackUri })
-          void startPlayback(trackUri)
-        },
-        () => {
-          // per-frame decode failure - ignore
-        }
-      )
-      .catch((err) => {
-        const message = err instanceof Error ? err.message : 'Failed to start camera'
-        setPhase({ kind: 'playbackFailed', trackUri: '', message })
-      })
-
-    return () => {
-      const scanner = scannerRef.current
-      if (scanner && scanner.isScanning) {
-        scanner
-          .stop()
-          .then(() => scanner.clear())
-          .catch(() => {})
-      }
-      scannerRef.current = null
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase.kind])
+  useQRScanner({
+    phaseKind: phase.kind,
+    scannerElementId: SCANNER_ELEMENT_ID,
+    setPhase,
+    startPlayback,
+  })
 
   // --- Button handlers ------------------------------------------------------
   // Logout: best-effort stop playback and release the playback device, clear
