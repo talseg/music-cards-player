@@ -1,9 +1,20 @@
 import { useEffect, useState } from 'react'
+import type { Dispatch, SetStateAction } from 'react'
 import { toAuthPhase } from './auth-utils'
 import type { Auth } from './spotify-auth'
 import type { AuthPhase } from '../common/types'
 
-export function useAuth(spotifyAuth: Auth) {
+interface UseAuthReturn {
+  auth: AuthPhase
+  setAuth: Dispatch<SetStateAction<AuthPhase>>
+  user: string | null
+  setUser: Dispatch<SetStateAction<string | null>>
+  showUser: boolean
+  handleLogin: () => void
+  handleReload: () => void
+}
+
+export function useAuth(spotifyAuth: Auth): UseAuthReturn {
   const [auth, setAuth] = useState<AuthPhase>({ kind: 'checking' })
   const [user, setUser] = useState<string | null>(null)
 

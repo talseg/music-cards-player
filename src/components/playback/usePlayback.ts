@@ -19,7 +19,25 @@ interface UsePlaybackArgs {
   isDebug: boolean
 }
 
-export function usePlayback({ auth, setAuth, sdk, isDebug }: UsePlaybackArgs) {
+interface UsePlaybackReturn {
+  phase: PlayerPhase
+  setPhase: Dispatch<SetStateAction<PlayerPhase>>
+  displayPosition: number
+  duration: number
+  dragValue: number | null
+  playPauseDisabled: boolean
+  isPlaying: boolean
+  fromStartDisabled: boolean
+  startPlayback: (trackUri: string) => Promise<void>
+  resetPlaybackForLogout: () => void
+  handlePlayPause: () => Promise<void>
+  handlePlayFromStart: () => Promise<void>
+  handleSeekChange: (e: ChangeEvent<HTMLInputElement>) => void
+  handleSeekCommit: () => Promise<void>
+  handleNextSong: () => Promise<void>
+}
+
+export function usePlayback({ auth, setAuth, sdk, isDebug }: UsePlaybackArgs): UsePlaybackReturn {
   const [phase, setPhase] = useState<PlayerPhase>({ kind: 'init' })
   const playerRef = useRef<SpotifyPlayer | null>(null)
   const playerInitStartedRef = useRef(false)

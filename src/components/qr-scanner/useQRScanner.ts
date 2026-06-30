@@ -16,7 +16,7 @@ export function useQRScanner({
   scannerElementId,
   setPhase,
   startPlayback,
-}: UseQRScannerArgs) {
+}: UseQRScannerArgs): void {
   const scannerRef = useRef<Html5Qrcode | null>(null)
 
   useEffect(() => {
@@ -55,4 +55,5 @@ export function useQRScanner({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phaseKind])
+
 }
