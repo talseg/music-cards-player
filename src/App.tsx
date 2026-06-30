@@ -10,7 +10,7 @@ import PlaybackFailedPanel from './components/PlaybackFailedPanel'
 import PlaybackControls from './components/PlaybackControls'
 import QRScanner from './components/QRScanner'
 import SeekBar from './components/SeekBar'
-import { useAuth } from './hooks/useAuth'
+import { useAuth } from './auth/useAuth'
 import {
   initializePlayer,
   playTrack,

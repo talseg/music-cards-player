@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { toAuthPhase } from '../auth/auth-utils'
-import type { Auth } from '../auth/spotify-auth'
+import { toAuthPhase } from './auth-utils'
+import type { Auth } from './spotify-auth'
 import type { AuthPhase } from '../common/types'
 
 export function useAuth(spotifyAuth: Auth) {
