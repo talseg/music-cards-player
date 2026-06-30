@@ -33,6 +33,7 @@ interface UsePlaybackReturn {
   resetPlaybackForLogout: () => void
   handlePlayPause: () => Promise<void>
   handlePlayFromStart: () => Promise<void>
+  handleCancelToIdle: () => void
   handleTryAgain: () => void
   handleSeekChange: (e: ChangeEvent<HTMLInputElement>) => void
   handleSeekCommit: () => Promise<void>
@@ -185,6 +186,10 @@ export function usePlayback({ auth, setAuth, sdk, isDebug }: UsePlaybackArgs): U
     }
   }
 
+  const handleCancelToIdle = () => {
+    setPhase({ kind: 'idle' })
+  }
+
   const handleTryAgain = () => {
     if (phase.kind !== 'playbackFailed') return
     const { trackUri } = phase
@@ -302,6 +307,7 @@ export function usePlayback({ auth, setAuth, sdk, isDebug }: UsePlaybackArgs): U
     resetPlaybackForLogout,
     handlePlayPause,
     handlePlayFromStart,
+    handleCancelToIdle,
     handleTryAgain,
     handleSeekChange,
     handleSeekCommit,

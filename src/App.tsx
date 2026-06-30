@@ -18,7 +18,7 @@ const SCANNER_ELEMENT_ID = 'qr-reader'
 
 // Create the auth bundle once at module load. The shared module (src/auth) is
 // app-agnostic; everything app-specific about auth lives in this config.
-const auth_ = createAuth({
+const spotifyAuth = createAuth({
   clientId: import.meta.env.VITE_SPOTIFY_CLIENT_ID as string,
   scopes: [
     'streaming',
@@ -29,7 +29,7 @@ const auth_ = createAuth({
   ],
   cachePrefix: 'music-cards-player:',
 })
-const sdk = auth_.sdk
+const spotifySdk = spotifyAuth.sdk
 
 // ---------------------------------------------------------------------------
 // Styled components
@@ -119,7 +119,7 @@ function App() {
     handleLogin,
     handleLogout,
     handleReload,
-  } = useAuth(auth_)
+  } = useAuth(spotifyAuth)
   const {
     phase,
     setPhase,
@@ -133,11 +133,12 @@ function App() {
     resetPlaybackForLogout,
     handlePlayPause,
     handlePlayFromStart,
+    handleCancelToIdle,
     handleTryAgain,
     handleSeekChange,
     handleSeekCommit,
     handleNextSong,
-  } = usePlayback({ auth, setAuth, sdk, isDebug: IS_DEBUG })
+  } = usePlayback({ auth, setAuth, sdk: spotifySdk, isDebug: IS_DEBUG })
 
   useQRScanner({
     phaseKind: phase.kind,
@@ -145,11 +146,6 @@ function App() {
     setPhase,
     startPlayback,
   })
-
-  // Cancel from the scanner or loading => return to idle (no song to fall back to).
-  const handleCancelToIdle = () => {
-    setPhase({ kind: 'idle' })
-  }
 
   // --- Render ---------------------------------------------------------------
   return (

@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 import { Html5Qrcode } from 'html5-qrcode'
 import type { PlayerPhase } from '../../common/types'
-import { extractTrackUri } from '../../spotify-player'
+import { toSpotifyTrackUri } from '../../spotify-player'
 
 interface UseQRScannerArgs {
   phaseKind: PlayerPhase['kind']
@@ -30,7 +30,7 @@ export function useQRScanner({
         { facingMode: 'environment' },
         { fps: 10, qrbox: { width: 250, height: 250 } },
         (decodedText) => {
-          const trackUri = extractTrackUri(decodedText)
+          const trackUri = toSpotifyTrackUri(decodedText)
           setPhase({ kind: 'loading', trackUri })
           void startPlayback(trackUri)
         },

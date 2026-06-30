@@ -67,7 +67,7 @@ export async function initializePlayer(sdk: SpotifyApi): Promise<SpotifyPlayer> 
   })
 }
 
-export function extractTrackUri(input: string): string {
+export function toSpotifyTrackUri(input: string): string {
   const trimmed = input.trim()
 
   let trackId: string
