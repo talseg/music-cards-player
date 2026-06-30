@@ -3,7 +3,7 @@ import type { InitAuthResult } from './spotify-auth'
 
 // Map the shared auth module's neutral result onto this app's AuthPhase model.
 // The error classification itself lives in src/auth/spotify-auth.ts.
-function toAuthPhase(result: InitAuthResult): { phase: AuthPhase; user: string | null } {
+export function toAuthPhase(result: InitAuthResult): { phase: AuthPhase; user: string | null } {
   if (result.ok) {
     return { phase: { kind: 'ready' }, user: result.user }
   }
@@ -28,5 +28,3 @@ function toAuthPhase(result: InitAuthResult): { phase: AuthPhase; user: string |
       return { phase: { kind: 'fatal', message: result.message, showUser: false }, user: null }
   }
 }
-
-export default toAuthPhase
