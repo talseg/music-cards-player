@@ -58,21 +58,22 @@ The whole point is that it stays **blind**: scanning a card with an ordinary QR 
 4. Under **Redirect URIs**, add both of these (replace `<your-ip-address>`):
    - `https://<your-ip-address>:5173/callback` &nbsp;(for `npm run dev`)
    - `https://<your-ip-address>:4173/callback` &nbsp;(for `npm run preview`)
+
+   You can find your IP address with:
+
+   ```bash
+   # Windows
+   ipconfig | findstr IPv4
+
+   # macOS
+   ipconfig getifaddr en0
+
+   # Linux
+   hostname -I
+   ```
 5. Under **Which API/SDKs are you planning to use?**, check **Web API** and **Web Playback SDK**.
 6. Be sure to scroll down and click **Save**.
 7. Open the **User Management** tab and add the name + email of every Spotify account that will use the app.
-8. <a name="redirect-uri-error"></a>⚠️ **If login fails with the error below**, it means the address you're browsing from — `https://<your-ip-address>:<port>/callback` — is missing from the **Redirect URIs** list:
-
-   <img src="public/authorize-error.png" alt="redirect_uri: Not matching configuration" width="450">
-
-   **To fix it**, add that exact `/callback` URI in the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) under **Redirect URIs** and click **Save**. You can find your current IP address with:
-
-   ```bash
-   ipconfig | findstr IPv4
-   # IPv4 Address. . . . . . . . . . . : <this-is-your-ip-address>
-   ```
-
-   **Why this keeps happening:** without a specific configuration, a device usually starts with a **different IP address after every reboot** (the router hands out addresses dynamically) — which silently invalidates the Redirect URI you registered. The lasting solution is to pin your device to a fixed IP, in one of two ways: a **router reservation** (recommended — the router always gives your device the same address) or a **manual static IP on the device**. Search the web for **"set a static ip address on your device"** for step-by-step guides.
 
 </details>
 
@@ -117,6 +118,25 @@ npm run preview    # → https://<your-ip-address>:4173
 
 ---
 
+## 🔧 Troubleshooting
+
+<details>
+<summary><a id="redirect-uri-error" name="redirect-uri-error"></a><strong>⚠️ Login fails with "redirect_uri: Not matching configuration"</strong></summary>
+
+<br>
+
+**If login fails with the error below**, it means the address you're browsing from — `https://<your-ip-address>:<port>/callback` — is missing from the **Redirect URIs** list:
+
+<img src="public/authorize-error.png" alt="redirect_uri: Not matching configuration" width="450">
+
+**To fix it**, add that exact `/callback` URI in the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) under **Redirect URIs** and click **Save** (see **Spotify Developer setup** step 4 for how to find your current IP address).
+
+**Why this keeps happening:** without a specific configuration, a device usually starts with a **different IP address after every reboot** (the router hands out addresses dynamically) — which silently invalidates the Redirect URI you registered. The lasting solution is to pin your device to a fixed IP, in one of two ways: a **router reservation** (recommended — the router always gives your device the same address) or a **manual static IP on the device**. Search the web for **"set a static ip address on your device"** for step-by-step guides.
+
+</details>
+
+---
+
 ## 🕹️ Usage & Tips
 
 - **Log in first** — playback needs a signed-in **Spotify Premium** account. The login is a one-time browser redirect; your session is remembered between visits.
@@ -132,8 +152,6 @@ npm run preview    # → https://<your-ip-address>:4173
 - **Keep it blind** — the player deliberately hides the song's title, artist, and year so players can guess. Only reach for a regular QR scanner if you actually want to open the song in Spotify and reveal the answer.
 
 - **Reveal answers (for testing)** — set `IS_DEBUG` to `true` near the top of [`src/App.tsx`](./src/App.tsx) to show each song's name, artist, and year on screen. Leave it `false` for the real "blind" game experience.
-
-- **Login fails with a `redirect_uri` error?** — most of the time this is solved by [this ⚠️ tip](#redirect-uri-error): your device's IP address changed, so the Redirect URI in the Spotify dashboard needs updating.
 
 ---
 
