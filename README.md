@@ -61,7 +61,7 @@ The whole point is that it stays **blind**: scanning a card with an ordinary QR 
 5. Under **Which API/SDKs are you planning to use?**, check **Web API** and **Web Playback SDK**.
 6. Be sure to scroll down and click **Save**.
 7. Open the **User Management** tab and add the name + email of every Spotify account that will use the app.
-8. ⚠️ **If login fails with the error below**, it means the address you're browsing from — `https://<your-ip-address>:<port>/callback` — is missing from the **Redirect URIs** list:
+8. <a name="redirect-uri-error"></a>⚠️ **If login fails with the error below**, it means the address you're browsing from — `https://<your-ip-address>:<port>/callback` — is missing from the **Redirect URIs** list:
 
    <img src="public/authorize-error.png" alt="redirect_uri: Not matching configuration" width="450">
 
@@ -111,7 +111,7 @@ npm run build
 npm run preview    # → https://<your-ip-address>:4173
 ```
 
-> ℹ️ The app runs over **HTTPS** with a self-signed certificate, so your browser will show a security warning on first visit — accept it to continue. HTTPS is also what lets the browser grant **camera** access for scanning.
+> ℹ️ The app runs over **HTTPS** with a self-signed certificate, so your browser will show a security warning on first visit, don't worry - accept it to continue. HTTPS is also what lets the browser grant **camera** access for scanning.
 >
 > 🚫 Open it via your **IP address**, not `https://localhost:5173` — that's the address registered as a Spotify Redirect URI, and it lets you reach the app from a phone on the same network.
 
@@ -132,6 +132,8 @@ npm run preview    # → https://<your-ip-address>:4173
 - **Keep it blind** — the player deliberately hides the song's title, artist, and year so players can guess. Only reach for a regular QR scanner if you actually want to open the song in Spotify and reveal the answer.
 
 - **Reveal answers (for testing)** — set `IS_DEBUG` to `true` near the top of [`src/App.tsx`](./src/App.tsx) to show each song's name, artist, and year on screen. Leave it `false` for the real "blind" game experience.
+
+- **Login fails with a `redirect_uri` error?** — most of the time this is solved by [this ⚠️ tip](#redirect-uri-error): your device's IP address changed, so the Redirect URI in the Spotify dashboard needs updating.
 
 ---
 
