@@ -65,7 +65,7 @@ The whole point is that it stays **blind**: scanning a card with an ordinary QR 
    # Windows
    ipconfig | findstr IPv4
 
-   # macOS
+   # macOS (if it prints nothing, try en1)
    ipconfig getifaddr en0
 
    # Linux
