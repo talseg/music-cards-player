@@ -5,9 +5,9 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
 
-> The companion player for the music **guessing game** — scan a card's QR code and the song plays right in your browser, no Spotify app, no spoilers.
+<img src="public/player.png" alt="Music Cards Player on a phone" align="right" width="300">
 
----
+> The companion player for the music **guessing game** — scan a card's QR code and the song plays right in your browser, no Spotify app, no spoilers.
 
 ## 📖 About
 
@@ -20,8 +20,6 @@ Once you've printed your deck, this app turns any phone or laptop into the playe
 3. The track starts playing **inside the app** — full song, straight to your speakers.
 
 The whole point is that it stays **blind**: scanning a card with an ordinary QR scanner opens Spotify and shows the song's title, artist, and artwork — giving the answer away. This player hides all of that. Players just hear the song, guess its title, artist, and release year, then flip the card to check.
-
-Playback runs through Spotify's **Web Playback SDK**, so the Spotify app never has to open and the answer never appears on screen.
 
 ---
 
@@ -63,20 +61,18 @@ Playback runs through Spotify's **Web Playback SDK**, so the Spotify app never h
 5. Under **Which API/SDKs are you planning to use?**, check **Web API** and **Web Playback SDK**.
 6. Be sure to scroll down and click **Save**.
 7. Open the **User Management** tab and add the name + email of every Spotify account that will use the app.
+8. ⚠️ **If login fails with the error below**, it means the address you're browsing from — `https://<your-ip-address>:<port>/callback` — is missing from the **Redirect URIs** list:
 
-> ⚠️ **Common pitfall:** your IP address can change after a reboot. If it does, you **must** add the new IP to the Redirect URIs above.
+   <img src="public/authorize-error.png" alt="redirect_uri: Not matching configuration" width="450">
 
-</details>
+   **To fix it**, add that exact `/callback` URI in the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) under **Redirect URIs** and click **Save**. You can find your current IP address with:
 
-<details>
-<summary><strong>🔍 Finding your IP address</strong></summary>
+   ```bash
+   ipconfig | findstr IPv4
+   # IPv4 Address. . . . . . . . . . . : <this-is-your-ip-address>
+   ```
 
-<br>
-
-```bash
-ipconfig | findstr IPv4
-# IPv4 Address. . . . . . . . . . . : <this-is-your-ip-address>
-```
+   **Why this keeps happening:** without a specific configuration, a device usually starts with a **different IP address after every reboot** (the router hands out addresses dynamically) — which silently invalidates the Redirect URI you registered. The lasting solution is to pin your device to a fixed IP, in one of two ways: a **router reservation** (recommended — the router always gives your device the same address) or a **manual static IP on the device**. Search the web for **"set a static ip address on your device"** for step-by-step guides.
 
 </details>
 
