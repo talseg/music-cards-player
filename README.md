@@ -23,7 +23,7 @@ The whole point is that it stays **blind**: scanning a card with an ordinary QR 
 
 ---
 
-## 🎮 Features
+## Features
 
 - 📷 **Scan to play** — point your device camera at a card's QR code and the song starts automatically.
 - 🎧 **In-browser playback** — full tracks play through the Spotify Web Playback SDK; the Spotify app never opens, so the title and artist stay hidden.
@@ -33,7 +33,7 @@ The whole point is that it stays **blind**: scanning a card with an ordinary QR 
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 <details>
 <summary><strong>✅ Prerequisites</strong></summary>
@@ -137,7 +137,7 @@ npm run preview    # → https://<your-ip-address>:4173
 
 ---
 
-## 🕹️ Usage & Tips
+## Usage & Tips
 
 - **Log in first** — playback needs a signed-in **Spotify Premium** account. The login is a one-time browser redirect; your session is remembered between visits.
 
@@ -160,7 +160,7 @@ npm run preview    # → https://<your-ip-address>:4173
 This project is released under the [MIT License](./LICENSE).
 
 - ✅ Free for personal use, learning, and contributions.
-- 🚫 Not allowed: publishing as an app on Google Play, Apple App Store, or similar platforms.
+- Please don't republish it as an app on Google Play, the Apple App Store, or similar platforms.
 
 🤝 **Want to contribute?** I'd be happy to have you on board — email **[talseg7@gmail.com](mailto:talseg7@gmail.com)** and we'll take it from there.
 
